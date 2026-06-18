@@ -118,6 +118,14 @@
             justify-content: center;
             font-size: 60px;
             margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
         }
 
         .product-name {
@@ -132,6 +140,7 @@
             color: #666;
             flex-grow: 1;
             margin-bottom: 10px;
+            white-space: pre-line;
         }
 
         .product-price {
@@ -424,14 +433,14 @@
 
     <script>
         // ============================================================
-        //  ТОВАРЫ — МЕНЯЙТЕ ЗДЕСЬ!
+        //  ТОВАРЫ — ЗАПОЛНЯЙТЕ ЗДЕСЬ!
         // ============================================================
         var products = [{
             id: 1,
-            name: "Товар №1",
-            desc: "Краткое описание товара",
+            name: "КРОСС-БОДИ",
+            desc: "Компактная и удобная сумка на каждый день. Регулируемый ремень и лаконичный дизайн делают ее универсальным аксессуаром.",
             price: 1500,
-            image: "📦"
+            image: "<img src='https://github.com/Borser71/my-store/raw/main/1.png' alt='Кросс-боди' />"
         }, {
             id: 2,
             name: "Товар №2",
