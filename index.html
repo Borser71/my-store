@@ -352,6 +352,38 @@
             border-color: #e94560;
         }
 
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 10px 0 15px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            font-size: 14px;
+            font-weight: 400;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .checkbox-group label a {
+            color: #e94560;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .checkbox-group label a:hover {
+            text-decoration: underline;
+        }
+
         .cart-total {
             display: flex;
             justify-content: space-between;
@@ -382,6 +414,11 @@
             background: #c0392b;
         }
 
+        .btn-checkout:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .toast {
             position: fixed;
             bottom: 30px;
@@ -403,7 +440,7 @@
             transform: translateY(0);
         }
 
-        /* ===== ПОДВАЛ С СОЦСЕТЯМИ И ССЫЛКОЙ НА ОФЕРТУ ===== */
+        /* ===== ПОДВАЛ ===== */
         .footer {
             text-align: center;
             padding: 40px 0 20px;
@@ -414,7 +451,7 @@
         .footer-links {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 25px;
             flex-wrap: wrap;
             margin-bottom: 15px;
         }
@@ -428,6 +465,10 @@
 
         .footer-links a:hover {
             color: #e94560;
+        }
+
+        .footer-links .divider {
+            color: #ddd;
         }
 
         .social-buttons {
@@ -497,7 +538,10 @@
             }
             .footer-links {
                 flex-direction: column;
-                gap: 10px;
+                gap: 8px;
+            }
+            .footer-links .divider {
+                display: none;
             }
         }
 
@@ -534,7 +578,11 @@
         <div class="footer">
             <div class="footer-links">
                 <a href="https://borser.site/offer/">Договор оферты</a>
+                <span class="divider">|</span>
+                <a href="https://borser.site/policy/">Политика конфиденциальности</a>
+                <span class="divider">|</span>
                 <a href="mailto:wisebor@gmail.com">wisebor@gmail.com</a>
+                <span class="divider">|</span>
                 <a href="tel:+79527387256">+7 (952) 738-72-56</a>
             </div>
 
@@ -584,11 +632,19 @@
                         <label for="customerAddress">Адрес доставки *</label>
                         <input type="text" id="customerAddress" name="address" placeholder="Город, улица, дом, квартира" required />
 
-                        <!-- Скрытые поля с данными заказа -->
+                        <!-- ===== ЧЕКБОКС СОГЛАСИЯ ===== -->
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="agreePolicy" required />
+                            <label for="agreePolicy">
+                                Я ознакомлен(а) с <a href="https://borser.site/policy/" target="_blank">Политикой обработки персональных данных</a> и даю согласие на обработку своих персональных данных в целях оформления и доставки заказа.
+                            </label>
+                        </div>
+
+                        <!-- Скрытое поле с данными заказа -->
                         <input type="hidden" id="orderDetails" name="order" value="" />
                     </div>
 
-                    <button type="submit" class="btn-checkout" style="margin-top: 10px;">
+                    <button type="submit" class="btn-checkout" id="submitOrder">
                         ✅ Оформить заказ
                     </button>
                 </form>
@@ -800,10 +856,17 @@
             var phone = document.getElementById('customerPhone').value.trim();
             var email = document.getElementById('customerEmail').value.trim();
             var address = document.getElementById('customerAddress').value.trim();
+            var agree = document.getElementById('agreePolicy').checked;
 
             if (!name || !phone || !email || !address) {
                 e.preventDefault();
                 showToast('⚠️ Пожалуйста, заполните все поля формы');
+                return;
+            }
+
+            if (!agree) {
+                e.preventDefault();
+                showToast('⚠️ Пожалуйста, дайте согласие на обработку персональных данных');
                 return;
             }
 
