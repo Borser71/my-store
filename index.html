@@ -639,7 +639,7 @@
                 </a>
 
                 <!-- WhatsApp -->
-                <a href="https://wa.me/79582319212" target="_blank" class="social-btn btn-whatsapp">
+                <a href="https://wa.me/79527387256" target="_blank" class="social-btn btn-whatsapp">
                     <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                     WhatsApp
                 </a>
@@ -718,9 +718,27 @@
 
     <script>
         // ============================================================
-        //  НАСТРОЙКА ОПЛАТЫ (ЗАМЕНИ НА ССЫЛКУ UNITPAY ИЛИ GETPLATINUM)
+        //  НАСТРОЙКА ОПЛАТЫ ЧЕРЕЗ UNITPAY (ТЕСТОВЫЙ РЕЖИМ)
         // ============================================================
-        var PAYMENT_URL = "https://interbor.getplatinum.ru/payment/0S54H1t";
+        var UNITPAY_PUBLIC_KEY = "445568-d9bd2";
+        var UNITPAY_SECRET_KEY = "sk_test_1be61c0d0c78d6e83fd33b1c8e09d235";
+
+        // ============================================================
+        //  ФУНКЦИЯ ГЕНЕРАЦИИ ПОДПИСИ (SIGNATURE)
+        // ============================================================
+        function getUnitpaySignature(params, secretKey) {
+            // Сортируем ключи по алфавиту
+            var sortedKeys = Object.keys(params).sort();
+            var signString = '';
+            for (var i = 0; i < sortedKeys.length; i++) {
+                var key = sortedKeys[i];
+                if (key === 'signature' || key === 'test') continue; // Исключаем параметры подписи и test
+                signString += key + '=' + encodeURIComponent(params[key]) + '&';
+            }
+            signString += secretKey;
+            // Вычисляем MD5-хэш
+            return CryptoJS.MD5(signString).toString();
+        }
 
         // ============================================================
         //  ТОВАРЫ
@@ -807,7 +825,7 @@
         }
 
         // ============================================================
-        //  ДОБАВИТЬ В КОРЗИНУ (С ИСПРАВЛЕННЫМ УВЕДОМЛЕНИЕМ)
+        //  ДОБАВИТЬ В КОРЗИНУ
         // ============================================================
         function addToCart(id) {
             var product = null;
@@ -910,9 +928,11 @@
         }
 
         // ============================================================
-        //  ОБРАБОТКА ФОРМЫ ПЕРЕД ОТПРАВКОЙ
+        //  ОБРАБОТКА ФОРМЫ И ОПЛАТА
         // ============================================================
         document.getElementById('orderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
             var name = document.getElementById('customerName').value.trim();
             var phone = document.getElementById('customerPhone').value.trim();
             var email = document.getElementById('customerEmail').value.trim();
@@ -920,20 +940,44 @@
             var agree = document.getElementById('agreePolicy').checked;
 
             if (!name || !phone || !email || !address) {
-                e.preventDefault();
                 showToast('⚠️ Пожалуйста, заполните все поля формы');
                 return;
             }
 
             if (!agree) {
-                e.preventDefault();
                 showToast('⚠️ Пожалуйста, дайте согласие на обработку персональных данных');
                 return;
             }
 
             var totals = getTotals();
+            if (totals.count === 0) {
+                showToast('⚠️ Корзина пуста');
+                return;
+            }
 
-            // Формируем текст заказа
+            // ---- Формируем данные для оплаты ----
+            var orderId = 'ORDER_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            var description = 'Заказ в магазине Женские сумки';
+
+            var paymentParams = {
+                sum: totals.total,
+                account: orderId,
+                desc: description,
+                test: 1 // <-- ТЕСТОВЫЙ РЕЖИМ
+            };
+
+            // ---- Генерация подписи ----
+            var signature = getUnitpaySignature(paymentParams, UNITPAY_SECRET_KEY);
+
+            // ---- Сборка ссылки для оплаты ----
+            var payUrl = 'https://unitpay.ru/pay/' + UNITPAY_PUBLIC_KEY + '?' +
+                'sum=' + encodeURIComponent(paymentParams.sum) +
+                '&account=' + encodeURIComponent(paymentParams.account) +
+                '&desc=' + encodeURIComponent(paymentParams.desc) +
+                '&test=' + encodeURIComponent(paymentParams.test) +
+                '&signature=' + encodeURIComponent(signature);
+
+            // ---- Отправка данных на Formspree ----
             var orderText = 'НОВЫЙ ЗАКАЗ!\n\n';
             orderText += 'Клиент: ' + name + '\n';
             orderText += 'Телефон: ' + phone + '\n';
@@ -948,21 +992,41 @@
                 var subtotal = item.price * item.qty;
                 orderText += '• ' + item.name + ' × ' + item.qty + ' = ' + subtotal.toLocaleString() + ' ₽\n';
             }
-
             orderText += '\nИтого: ' + totals.total.toLocaleString() + ' ₽';
 
-            // Записываем данные заказа в скрытое поле
             document.getElementById('orderDetails').value = orderText;
 
-            // Открываем оплату в новом окне
-            var payUrl = PAYMENT_URL + '?amount=' + totals.total;
+            // ---- Отправка формы ----
+            var form = document.getElementById('orderForm');
+            var formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).then(function(response) {
+                if (response.ok) {
+                    showToast('✅ Заказ отправлен! Сумма: ' + totals.total.toLocaleString() + ' ₽');
+                } else {
+                    showToast('⚠️ Ошибка при отправке заказа, но вы можете продолжить оплату');
+                }
+            }).catch(function() {
+                showToast('⚠️ Ошибка при отправке заказа, но вы можете продолжить оплату');
+            });
+
+            // ---- Переход на оплату ----
             window.open(payUrl, '_blank');
 
-            // Очищаем корзину после отправки
+            // ---- Очистка корзины ----
             cart = {};
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
+            document.getElementById('customerEmail').value = '';
+            document.getElementById('customerAddress').value = '';
+            document.getElementById('agreePolicy').checked = false;
             updateUI();
-
-            showToast('✅ Заказ отправлен! Сумма: ' + totals.total.toLocaleString() + ' ₽');
+            toggleCart();
         });
 
         // ============================================================
@@ -987,6 +1051,7 @@
         updateUI();
 
         console.log('✅ Магазин работает! Товаров: ' + products.length);
+        console.log('✅ Unitpay тестовый режим включён');
     </script>
 </body>
 </html>
